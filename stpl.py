@@ -1,25 +1,25 @@
 #!/usr/bin/env python3
 
-from os import system, environ
-from yaml import safe_load, safe_dump
-from shlex import split
+import os
+import yaml
+import shlex
 
-ACTIONS_FILEPATH = "actions.yml"
+ACTIONS_FILEPATH = os.path.dirname(os.path.realpath(__file__)) + "/actions.yml"
 
 def load_actions():
-    return safe_load(open(ACTIONS_FILEPATH))
+    return yaml.safe_load(open(ACTIONS_FILEPATH))
 
 def save_actions(actions):
-    safe_dump(actions, open(ACTIONS_FILEPATH, "w"))
+    yaml.safe_dump(actions, open(ACTIONS_FILEPATH, "w"))
 
 def evaluate(string: str):
     string = string.strip()
     if string[0] == "!":
-        system(string[1:])
+        os.system(string[1:])
         return
 
     global actions
-    parts = split(string)
+    parts = shlex.split(string)
 
     if len(parts) == 0:
         return
@@ -30,14 +30,19 @@ def evaluate(string: str):
         command = action[1:]
 
         if command == "e":
-            system(f"{environ.get('EDITOR')} {ACTIONS_FILEPATH}")
+            os.system(f"{environ.get('EDITOR')} {ACTIONS_FILEPATH}")
             actions = load_actions()
         elif command == "r":
             actions = load_actions()
         elif command == "w":
             save_actions(actions)
-        elif command == "dump":
-            print(actions)
+        elif command == "cd":
+            if len(parts) < 2:
+                print("Usage:")
+                print("  :cd [DIR]")
+            else:
+                os.chdir(parts[1])
+                print(f"pwd is `{os.getcwd()}'")
         elif command == "c":
             if len(parts) < 3:
                 print("Usage:")
@@ -65,7 +70,7 @@ def evaluate(string: str):
             print(f"Error: command `{command}' does not exist")
     elif action in actions:
         prefix = f"codi_action{len(actions)}"
-        system(f"{prefix}{action}() {{ {'; '.join(actions[action])}; }}; {prefix}{string}")
+        os.system(f"{prefix}{action}() {{ {'; '.join(actions[action])}; }}; {prefix}{string}")
     else:
         print(f"Error: action `{action}' does not exist")
 
